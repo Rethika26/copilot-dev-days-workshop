@@ -1,10 +1,8 @@
 // UI code: connects the quiz logic (quiz.js) to the page (index.html).
 
 const QUESTION_TIME_SECONDS = 15;
-const state = {
-  questions: [],
-  current: 0,
-  score: 0,
+let quizState = createQuiz([]);
+const uiState = {
   remainingSeconds: QUESTION_TIME_SECONDS,
   timerDeadline: 0,
   timerId: null,
@@ -22,6 +20,7 @@ const feedbackText = document.getElementById("feedback");
 const nextButton = document.getElementById("next-btn");
 const scoreText = document.getElementById("score-text");
 const gradeText = document.getElementById("grade-text");
+const feedbackMessageText = document.getElementById("feedback-message");
 
 function showScreen(screenToShow) {
   [startScreen, quizScreen, resultScreen].forEach((screen) => {
@@ -31,28 +30,26 @@ function showScreen(screenToShow) {
 
 function startQuiz() {
   stopTimer();
-  state.questions = shuffle(QUESTIONS);
-  state.current = 0;
-  state.score = 0;
+  quizState = createQuiz(shuffle(QUESTIONS));
   showScreen(quizScreen);
   renderQuestion();
 }
 
 function renderQuestion() {
   stopTimer();
-  const question = state.questions[state.current];
-  progressText.textContent = `Question ${state.current + 1} of ${state.questions.length}`;
+  const question = quizState.questions[quizState.current];
+  progressText.textContent = `Question ${quizState.current + 1} of ${quizState.questions.length}`;
   questionText.textContent = question.question;
   feedbackText.textContent = "";
   nextButton.hidden = true;
   optionsList.innerHTML = "";
-  state.remainingSeconds = QUESTION_TIME_SECONDS;
-  state.questionResolved = false;
-  state.timerDeadline = Date.now() + QUESTION_TIME_SECONDS * 1000;
-  timerText.textContent = formatTimeLeft(state.remainingSeconds);
+  uiState.remainingSeconds = QUESTION_TIME_SECONDS;
+  uiState.questionResolved = false;
+  uiState.timerDeadline = Date.now() + QUESTION_TIME_SECONDS * 1000;
+  timerText.textContent = formatTimeLeft(uiState.remainingSeconds);
   timerText.classList.remove("timer-warning");
   updateTimer();
-  state.timerId = setInterval(updateTimer, 250);
+  uiState.timerId = setInterval(updateTimer, 250);
 
   question.options.forEach((option, index) => {
     const item = document.createElement("li");
@@ -66,16 +63,16 @@ function renderQuestion() {
 }
 
 function stopTimer() {
-  if (state.timerId !== null) {
-    clearInterval(state.timerId);
-    state.timerId = null;
+  if (uiState.timerId !== null) {
+    clearInterval(uiState.timerId);
+    uiState.timerId = null;
   }
 }
 
 function updateTimer() {
-  const secondsLeft = Math.max(0, Math.ceil((state.timerDeadline - Date.now()) / 1000));
-  if (secondsLeft !== state.remainingSeconds) {
-    state.remainingSeconds = secondsLeft;
+  const secondsLeft = Math.max(0, Math.ceil((uiState.timerDeadline - Date.now()) / 1000));
+  if (secondsLeft !== uiState.remainingSeconds) {
+    uiState.remainingSeconds = secondsLeft;
     timerText.textContent = formatTimeLeft(secondsLeft);
     timerText.classList.toggle("timer-warning", secondsLeft <= 5);
   }
@@ -86,8 +83,8 @@ function updateTimer() {
 }
 
 function lockQuestion() {
-  if (state.questionResolved) return false;
-  state.questionResolved = true;
+  if (uiState.questionResolved) return false;
+  uiState.questionResolved = true;
   stopTimer();
   optionsList.querySelectorAll("button").forEach((button) => (button.disabled = true));
   nextButton.hidden = false;
@@ -97,7 +94,7 @@ function lockQuestion() {
 
 function handleTimeExpired() {
   if (!lockQuestion()) return;
-  const question = state.questions[state.current];
+  const question = quizState.questions[quizState.current];
   const buttons = optionsList.querySelectorAll("button");
   buttons[question.answer].classList.add("correct");
   feedbackText.textContent = "Time's up!";
@@ -107,11 +104,12 @@ function selectAnswer(selectedIndex, selectedButton) {
   updateTimer();
   if (!lockQuestion()) return;
 
-  const question = state.questions[state.current];
+  const question = quizState.questions[quizState.current];
   const buttons = optionsList.querySelectorAll("button");
+  const result = answerQuestion(quizState, selectedIndex);
+  quizState = result.state;
 
-  if (isCorrect(question, selectedIndex)) {
-    state.score++;
+  if (result.correct) {
     selectedButton.classList.add("correct");
     feedbackText.textContent = "Correct!";
   } else {
@@ -125,8 +123,8 @@ function selectAnswer(selectedIndex, selectedButton) {
 }
 
 function nextQuestion() {
-  state.current++;
-  if (state.current < state.questions.length) {
+  quizState = advanceQuestion(quizState);
+  if (!isQuizFinished(quizState)) {
     renderQuestion();
   } else {
     showResults();
@@ -135,10 +133,12 @@ function nextQuestion() {
 
 function showResults() {
   stopTimer();
-  const total = state.questions.length;
-  const percentage = calculatePercentage(state.score, total);
-  scoreText.textContent = `You scored ${state.score} out of ${total} (${percentage}%)`;
-  gradeText.textContent = `Grade: ${getGrade(percentage)}`;
+  const total = quizState.questions.length;
+  const percentage = calculatePercentage(quizState.score, total);
+  const grade = getGrade(percentage);
+  scoreText.textContent = `You scored ${quizState.score} out of ${total} (${percentage}%)`;
+  gradeText.textContent = `Grade: ${grade}`;
+  feedbackMessageText.textContent = getFeedbackMessage(grade);
   showScreen(resultScreen);
 }
 

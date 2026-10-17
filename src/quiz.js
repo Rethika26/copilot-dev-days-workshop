@@ -2,6 +2,49 @@
 // This file has NO browser (DOM) code so it can be tested with Node.js.
 
 /**
+ * Creates an initial quiz state without retaining the caller's array.
+ */
+function createQuiz(questions) {
+  return {
+    questions: [...questions],
+    current: 0,
+    score: 0,
+  };
+}
+
+/**
+ * Returns a new quiz state and whether the selected answer was correct.
+ */
+function answerQuestion(state, selectedIndex) {
+  const question = state.questions[state.current];
+  const correct = question !== undefined && isCorrect(question, selectedIndex);
+  return {
+    state: {
+      ...state,
+      score: state.score + (correct ? 1 : 0),
+    },
+    correct,
+  };
+}
+
+/**
+ * Moves to the next question in a new quiz state.
+ */
+function advanceQuestion(state) {
+  return {
+    ...state,
+    current: state.current + 1,
+  };
+}
+
+/**
+ * Returns true when the quiz has no remaining questions.
+ */
+function isQuizFinished(state) {
+  return state.current >= state.questions.length;
+}
+
+/**
  * Returns a new array with the items in random order.
  * The original array is not changed.
  */
@@ -34,10 +77,20 @@ function calculatePercentage(score, total) {
  * A = 90% or more, B = 75% or more, C = 50% or more.
  */
 function getGrade(percentage) {
-  if (percentage > 90) return "A";
-  if (percentage > 75) return "B";
-  if (percentage > 50) return "C";
+  if (percentage >= 90) return "A";
+  if (percentage >= 75) return "B";
+  if (percentage >= 50) return "C";
   return "Keep practicing";
+}
+
+/**
+ * Returns an encouraging message for a grade.
+ */
+function getFeedbackMessage(grade) {
+  if (grade === "A") return "Outstanding work! You really know your stuff.";
+  if (grade === "B") return "Great job! Keep practicing to master this.";
+  if (grade === "C") return "Good effort! Keep learning and improving.";
+  return "Every quiz is a chance to learn. Keep going!";
 }
 
 /**
@@ -49,5 +102,16 @@ function formatTimeLeft(seconds) {
 
 // Lets Node.js tests load this file. Browsers ignore this block.
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { shuffle, isCorrect, calculatePercentage, getGrade, formatTimeLeft };
+  module.exports = {
+    createQuiz,
+    answerQuestion,
+    advanceQuestion,
+    isQuizFinished,
+    shuffle,
+    isCorrect,
+    calculatePercentage,
+    getGrade,
+    getFeedbackMessage,
+    formatTimeLeft,
+  };
 }
