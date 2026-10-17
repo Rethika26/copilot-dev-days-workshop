@@ -9,6 +9,7 @@ const {
   isQuizFinished,
   shuffle,
   isCorrect,
+  isNewBestScore,
   calculatePercentage,
   getGrade,
   getFeedbackMessage,
@@ -79,6 +80,30 @@ test("isCorrect returns true for the right answer", () => {
 
 test("isCorrect returns false for a wrong answer", () => {
   assert.equal(isCorrect({ answer: 2 }, 0), false);
+});
+
+test("isNewBestScore returns true when there is no previous best", () => {
+  assert.equal(isNewBestScore(0, null), true);
+});
+
+test("isNewBestScore returns true when the current score is higher", () => {
+  assert.equal(isNewBestScore(81, 80), true);
+});
+
+test("isNewBestScore returns false when the current score ties the best", () => {
+  assert.equal(isNewBestScore(80, 80), false);
+});
+
+test("isNewBestScore returns false when the current score is lower", () => {
+  assert.equal(isNewBestScore(79, 80), false);
+});
+
+test("isNewBestScore recognizes a perfect percentage", () => {
+  assert.equal(isNewBestScore(100, 99), true);
+});
+
+test("isNewBestScore does not treat a zero-score tie as a new best", () => {
+  assert.equal(isNewBestScore(0, 0), false);
 });
 
 test("calculatePercentage rounds to a whole number", () => {

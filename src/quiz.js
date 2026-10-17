@@ -65,6 +65,13 @@ function isCorrect(question, selectedIndex) {
 }
 
 /**
+ * Returns true when the current percentage beats the saved best percentage.
+ */
+function isNewBestScore(current, best) {
+  return best === null || current > best;
+}
+
+/**
  * Converts a score into a whole-number percentage (0-100).
  */
 function calculatePercentage(score, total) {
@@ -109,6 +116,7 @@ if (typeof module !== "undefined" && module.exports) {
     isQuizFinished,
     shuffle,
     isCorrect,
+    isNewBestScore,
     calculatePercentage,
     getGrade,
     getFeedbackMessage,
